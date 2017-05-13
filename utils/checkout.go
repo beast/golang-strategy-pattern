@@ -1,12 +1,5 @@
 package utils
 
-import (
-	"log"
-	"strategy-pattern/model"
-
-	"github.com/shopspring/decimal"
-)
-
 // CheckOut interface sets discount strategy and total signature
 type CheckOut interface {
 	SetDiscountStrategy(DiscountStrategy)
@@ -19,7 +12,7 @@ type DiscountStrategy func(string, []string) (string, error)
 // order struct to hold checkout information
 type order struct {
 	customerID string
-	products   []string
+	productIDs []string
 	total      string
 	strategy   DiscountStrategy
 	errorCode  error
@@ -32,12 +25,11 @@ func (o *order) SetDiscountStrategy(s DiscountStrategy) {
 
 // Total calculates total for checkOut
 func (o *order) Total() (string, error) {
-	o.total, o.errorCode = o.strategy(o.customerID, o.products)
+	o.total, o.errorCode = o.strategy(o.customerID, o.productIDs)
 	return o.total, o.errorCode
 }
 
 // NewCheckOut returns a CheckOut interface
 func NewCheckOut(customerID string, products []string) CheckOut {
-	return &order{customerID: customerID, products: products}
+	return &order{customerID: customerID, productIDs: products}
 }
-
