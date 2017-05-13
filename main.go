@@ -12,6 +12,6 @@ func main() {
 	e.GET("/", func(c echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
-	e.POST("/pricing", handler.CalulatePrice)
+	e.POST("/checkout", handler.CalculatePrice)
 	e.Logger.Fatal(e.Start(":1323"))
 }
