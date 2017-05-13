@@ -9,19 +9,25 @@ Technology Stack:
 
 <img src="https://echo.labstack.com/images/logo.png" height="50">
 
-
-
-
 ##Project structure
 ```.
 ├── handler
-│   ├── checkout.go
+│   ├── calculatePrice.go
 │   └── handler.go
 ├── main.go
-└── readme.md
+├── model
+│   └── model.go
+├── readme.md
+├── strategy-pattern
+├── test
+└── utils
+    ├── checkout.go
+    └── discount.go
 ```
 
 * **handler** business logic and API binding
 * **main.go** application entry point and API routes
 * **model** contains all DB or model related struct or functions
-* **test** are for test coverages
+* **strategy-pattern** executable
+* **test** are for end-to-end test coverages, unit testing will be added later
+* **utils** utility struct or functions

@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"log"
 	"strategy-pattern/model"
 	"strings"
 
@@ -11,7 +10,6 @@ import (
 // GetDiscountStrategy get discount strategy by customer id.
 func GetDiscountStrategy(customerID string) DiscountStrategy {
 	discountRuleID := model.GetDiscountRule(customerID)
-	log.Println("discount rule: " + discountRuleID)
 	switch discountRuleID {
 	// In production environment the rule id should be uuid, using string switch here to simulate a rule engine
 	case "1":
@@ -21,9 +19,8 @@ func GetDiscountStrategy(customerID string) DiscountStrategy {
 	case "3":
 		return priceDrop("379.99", "premium", 4)
 	case "4":
-		return xForY(5, "classic")
+		break
 	default:
-		log.Println("default strategy")
 		return noDiscount()
 	}
 	return nil
@@ -86,16 +83,14 @@ func priceDrop(newPrice string, productType string, dropStartsAt int) DiscountSt
 				if err != nil {
 					return "", err
 				}
-				log.Println("new price is: " + price.StringFixed(2))
 			}
-			log.Println("price is: " + price.StringFixed(2))
 			total = total.Add(price)
-			log.Println("total is now: " + total.StringFixed(2))
 		}
 		return total.StringFixed(2), nil
 	}
 }
 
+// Counts the number of products in same category and put in a map
 func productCount(list []string) map[string]int {
 
 	duplicateFrequency := make(map[string]int)
