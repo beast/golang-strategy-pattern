@@ -2,7 +2,6 @@ package utils
 
 import (
 	"strategy-pattern/model"
-	"strings"
 
 	"github.com/shopspring/decimal"
 )
@@ -13,85 +12,38 @@ func GetDiscountStrategy(customerID string) DiscountStrategy {
 	switch discountRuleID {
 	// In production environment the rule id should be uuid, using string switch here to simulate a rule engine
 	case "1":
-		return xForY(3, "classic")
+		return unileverDiscount()
 	case "2":
-		return priceDrop("299.99", "standout", 0)
+		return appleDiscount()
 	case "3":
-		return priceDrop("379.99", "premium", 4)
+		return nikeDiscount()
 	case "4":
-		break
+		return fordDiscount()
 	default:
-		return noDiscount()
+		return defaultDiscount()
 	}
 	return nil
 }
 
 // decorators
-// no discounts
-func noDiscount() DiscountStrategy {
-	return func(customerID string, products []string) (string, error) {
-		var total decimal.Decimal
-		for _, productID := range products {
-			// todo: productID validation
-			price, err := model.GetProductPrice(productID)
-			if err != nil {
-				return "", err
-			}
-			total = total.Add(price)
-		}
-		return total.StringFixed(2), nil
-	}
+func NoDiscount(count int, price decimal.Decimal) decimal.Decimal {
+	return price.Mul(decimal.NewFromFloat(float64(count)))
 }
 
-// x for x-1 discounts
-func xForY(x int, productType string) DiscountStrategy {
-	return func(customerID string, productIDs []string) (string, error) {
-		var total decimal.Decimal
-		var productCounter int
-		for _, productID := range productIDs {
-			if strings.EqualFold(productType, productID) {
-				productCounter++
-			}
-			// todo: productID validation
-			price, err := model.GetProductPrice(productID)
-			if err != nil {
-				return "", err
-			}
-			if productCounter%x != 0 || !strings.EqualFold(productType, productID) {
-				total = total.Add(price)
-			}
-		}
-		return total.StringFixed(2), nil
-	}
+func XForY(count int, x int, y int, price decimal.Decimal) decimal.Decimal {
+	return price.Mul(decimal.NewFromFloat(float64(count/x*y + count%x)))
 }
 
-// price drop discounts
-func priceDrop(newPrice string, productType string, dropStartsAt int) DiscountStrategy {
-	return func(customerID string, productIDs []string) (string, error) {
-		var total decimal.Decimal
-		var price decimal.Decimal
-		var err error
-		productMap := productCount(productIDs)
-		for _, productID := range productIDs {
-			// todo: productID validation
-			price, err = model.GetProductPrice(productID)
-			if err != nil {
-				return "", err
-			}
-			if strings.EqualFold(productType, productID) && productMap[productType] >= dropStartsAt {
-				price, err = decimal.NewFromString(newPrice)
-				if err != nil {
-					return "", err
-				}
-			}
-			total = total.Add(price)
-		}
-		return total.StringFixed(2), nil
+func PriceDrop(count int, oldPrice decimal.Decimal, sNewPrice string, dropStartsAt int) decimal.Decimal {
+	newPrice, _ := decimal.NewFromString(sNewPrice)
+	if count >= dropStartsAt {
+		return newPrice.Mul(decimal.NewFromFloat(float64(count)))
 	}
+	return oldPrice.Mul(decimal.NewFromFloat(float64(count)))
 }
 
 // Counts the number of products in same category and put in a map
-func productCount(list []string) map[string]int {
+func getProductCount(list []string) map[string]int {
 
 	duplicateFrequency := make(map[string]int)
 
@@ -107,4 +59,131 @@ func productCount(list []string) map[string]int {
 		}
 	}
 	return duplicateFrequency
+}
+
+// todo: during production the followings should read the rules from database
+// discount strategies
+func defaultDiscount() DiscountStrategy {
+	return func(customerID string, productIDs []string) (string, error) {
+		var total string
+		productCountMap := getProductCount(productIDs)
+		// todo: should put prices in a map instead of getting it one by one
+		classicPrice, err := model.GetProductPrice("classic")
+		if err != nil {
+			return "", err
+		}
+		standoutPrice, err := model.GetProductPrice("standout")
+		if err != nil {
+			return "", err
+		}
+		premiumPrice, err := model.GetProductPrice("premium")
+		if err != nil {
+			return "", err
+		}
+		classicTotal := NoDiscount(productCountMap["classic"], classicPrice)
+		standoutTotal := NoDiscount(productCountMap["standout"], standoutPrice)
+		premiumTotal := NoDiscount(productCountMap["premium"], premiumPrice)
+		total = classicTotal.Add(standoutTotal).Add(premiumTotal).StringFixed(2)
+		return total, nil
+	}
+}
+
+func unileverDiscount() DiscountStrategy {
+	return func(customerID string, productIDs []string) (string, error) {
+		var total string
+		productCountMap := getProductCount(productIDs)
+		// todo: should put prices in a map instead of getting it one by one
+		classicPrice, err := model.GetProductPrice("classic")
+		if err != nil {
+			return "", err
+		}
+		standoutPrice, err := model.GetProductPrice("standout")
+		if err != nil {
+			return "", err
+		}
+		premiumPrice, err := model.GetProductPrice("premium")
+		if err != nil {
+			return "", err
+		}
+		classicTotal := XForY(productCountMap["classic"], 3, 2, classicPrice)
+		standoutTotal := NoDiscount(productCountMap["standout"], standoutPrice)
+		premiumTotal := NoDiscount(productCountMap["premium"], premiumPrice)
+		total = classicTotal.Add(standoutTotal).Add(premiumTotal).StringFixed(2)
+		return total, nil
+	}
+}
+
+func appleDiscount() DiscountStrategy {
+	return func(customerID string, productIDs []string) (string, error) {
+		var total string
+		productCountMap := getProductCount(productIDs)
+		// todo: should put prices in a map instead of getting it one by one
+		classicPrice, err := model.GetProductPrice("classic")
+		if err != nil {
+			return "", err
+		}
+		standoutPrice, err := model.GetProductPrice("standout")
+		if err != nil {
+			return "", err
+		}
+		premiumPrice, err := model.GetProductPrice("premium")
+		if err != nil {
+			return "", err
+		}
+		classicTotal := NoDiscount(productCountMap["classic"], classicPrice)
+		standoutTotal := PriceDrop(productCountMap["standout"], standoutPrice, "299.99", 0)
+		premiumTotal := NoDiscount(productCountMap["premium"], premiumPrice)
+		total = classicTotal.Add(standoutTotal).Add(premiumTotal).StringFixed(2)
+		return total, nil
+	}
+}
+
+func nikeDiscount() DiscountStrategy {
+	return func(customerID string, productIDs []string) (string, error) {
+		var total string
+		productCountMap := getProductCount(productIDs)
+		// todo: should put prices in a map instead of getting it one by one
+		classicPrice, err := model.GetProductPrice("classic")
+		if err != nil {
+			return "", err
+		}
+		standoutPrice, err := model.GetProductPrice("standout")
+		if err != nil {
+			return "", err
+		}
+		premiumPrice, err := model.GetProductPrice("premium")
+		if err != nil {
+			return "", err
+		}
+		classicTotal := NoDiscount(productCountMap["classic"], classicPrice)
+		standoutTotal := NoDiscount(productCountMap["standout"], standoutPrice)
+		premiumTotal := PriceDrop(productCountMap["premium"], premiumPrice, "379.99", 4)
+		total = classicTotal.Add(standoutTotal).Add(premiumTotal).StringFixed(2)
+		return total, nil
+	}
+}
+
+func fordDiscount() DiscountStrategy {
+	return func(customerID string, productIDs []string) (string, error) {
+		var total string
+		productCountMap := getProductCount(productIDs)
+		// todo: should put prices in a map instead of getting it one by one
+		classicPrice, err := model.GetProductPrice("classic")
+		if err != nil {
+			return "", err
+		}
+		standoutPrice, err := model.GetProductPrice("standout")
+		if err != nil {
+			return "", err
+		}
+		premiumPrice, err := model.GetProductPrice("premium")
+		if err != nil {
+			return "", err
+		}
+		classicTotal := XForY(productCountMap["classic"], 5, 4, classicPrice)
+		standoutTotal := PriceDrop(productCountMap["standout"], standoutPrice, "309.99", 0)
+		premiumTotal := PriceDrop(productCountMap["premium"], premiumPrice, "389.99", 3)
+		total = classicTotal.Add(standoutTotal).Add(premiumTotal).StringFixed(2)
+		return total, nil
+	}
 }

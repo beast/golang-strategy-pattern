@@ -19,6 +19,7 @@ var _ = Describe("calculatePrice Handler", func() {
 		unileverReqJSON = `{"customerID":"unilever","products":["classic", "classic", "classic","premium"]}`
 		appleReqJSON    = `{"customerID":"apple","products":["standout", "standout", "standout","premium"]}`
 		nikeReqJSON     = `{"customerID":"nike","products":["premium", "premium", "premium","premium"]}`
+		fordReqJSON     = `{"customerID":"ford","products":["classic", "classic", "classic","classic","classic","standout","premium","premium","premium"]}`
 	)
 
 	Context("If the client is default", func() {
@@ -82,6 +83,22 @@ var _ = Describe("calculatePrice Handler", func() {
 			Expect(rec.Code).To(Equal(http.StatusOK))
 			// log.Println(rec.Body.String())
 			Expect(rec.Body.String()).To(Equal(`{"total":"1519.96"}`))
+		})
+	})
+
+	Context("If the client is Ford", func() {
+		It("should return 200 OK and total of  2559.92", func() {
+			req := httptest.NewRequest(echo.POST, "/", strings.NewReader(fordReqJSON))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			err := handler.CalculatePrice(c)
+			if err != nil {
+				Fail(err.Error())
+			}
+			Expect(rec.Code).To(Equal(http.StatusOK))
+			// log.Println(rec.Body.String())
+			Expect(rec.Body.String()).To(Equal(`{"total":"2559.92"}`))
 		})
 	})
 
